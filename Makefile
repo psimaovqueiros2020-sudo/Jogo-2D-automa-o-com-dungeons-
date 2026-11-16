@@ -5,8 +5,8 @@
 
 CC      = gcc
 CFLAGS  = -std=c99 -Wall -Wextra
-SRC     = main.c world.c logic.c render.c
-HDR     = world.h logic.h render.h
+SRC     = main.c world.c logic.c render.c items.c menu.c
+HDR     = world.h logic.h render.h items.h menu.h
 
 ifeq ($(OS),Windows_NT)
     TARGET = clareira.exe
@@ -23,13 +23,18 @@ endif
 $(TARGET): $(SRC) $(HDR)
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LIBS)
 
-# Os testes so usam world.c e logic.c e a raylib FALSA (tests/fake).
-# O -Itests/fake so existe aqui: nunca no comando do jogo.
-test: tests/test_logica.c world.c logic.c $(HDR)
-	$(CC) $(CFLAGS) -Wno-unused-function -Itests/fake tests/test_logica.c world.c logic.c -o test_logica -lm
+# Os testes: tests/test_logica.c so usa world.c, logic.c e items.c; tests/test_menu.c
+# usa tambem menu.c e render.c (com cliques FALSOS). Ambos usam a raylib FALSA
+# (tests/fake). O -Itests/fake e o -DCLAREIRA_TEST so existem aqui: NUNCA no comando do jogo.
+TFLAGS = $(CFLAGS) -Wno-unused-function -DCLAREIRA_TEST -Itests/fake
+
+test: tests/test_logica.c tests/test_menu.c tests/fake/raylib.h world.c logic.c items.c menu.c render.c $(HDR)
+	$(CC) $(TFLAGS) tests/test_logica.c world.c logic.c items.c -o test_logica -lm
 	./test_logica
+	$(CC) $(TFLAGS) tests/test_menu.c menu.c render.c world.c logic.c items.c -o test_menu -lm
+	./test_menu
 
 clean:
-	rm -f clareira clareira.exe test_logica test_logica.exe
+	rm -f clareira clareira.exe test_logica test_logica.exe test_menu test_menu.exe
 
 .PHONY: test clean

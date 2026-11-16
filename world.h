@@ -2,13 +2,14 @@
  * world.h  -  O MUNDO: configuracao, terreno, minerios, tiles e geracao.
  * Implementado em world.c.
  *
- * Nota: as tabelas TERRAIN[] e ORE[] guardam uma Color (so o TIPO da raylib,
- * nenhuma funcao dela). Por isso este cabecalho inclui raylib.h.
+ * Nota: a tabela TERRAIN[] guarda uma Color (so o TIPO da raylib, nenhuma
+ * funcao dela). Por isso este cabecalho inclui raylib.h.
  */
 #ifndef WORLD_H
 #define WORLD_H
 
 #include "raylib.h"
+#include "items.h"
 #include <stdint.h>
 
 /* ------------------------------------------------------------------ */
@@ -21,6 +22,12 @@
 #define TILE_SIZE  16           /* tamanho de um tile em pixels do mundo */
 
 #define DEFAULT_SEED 1234u
+
+/* Madeira de cada arvore do interior do mapa, em unidades de 0,1 L de lenha
+ * empilhada (400 a 600 un = 40 a 60 L = ~16 a 24 kg de lenha: uma arvore pequena
+ * ou media). Antes eram 20 a 30 un (2 a 3 L), que nem dava para uma esteira. */
+#define TREE_WOOD_MIN 400
+#define TREE_WOOD_MAX 600
 
 /* Posicoes importantes (em tiles) */
 #define CLEARING_X   80
@@ -67,9 +74,11 @@ typedef struct {
 extern const TerrainInfo TERRAIN[T_COUNT];
 
 /* ------------------------------------------------------------------ */
-/* Minerios / jazidas                                                  */
+/* Jazidas (o que existe no chao)                                      */
 /* ------------------------------------------------------------------ */
 
+/* O que existe NO CHAO. O que a jazida da quando se extrai (o ITEM) esta em
+ * ORE[].item; nome e cor vem da tabela de itens (items.h). */
 typedef enum {
     ORE_NONE = 0,
     ORE_HEMATITE,       /* minerio de ferro (encosta sudeste)   */
@@ -78,19 +87,12 @@ typedef enum {
     ORE_QUARTZO,        /* quartzo (afloramento noroeste)       */
     ORE_MADEIRA,        /* madeira (vem das arvores, T_ARVORE)  */
     ORE_AREIA,          /* areia (margens do ribeiro, em lama)  */
-    /* Daqui para baixo: PRODUTOS. Nao existem no chao, so saem de maquinas.
-     * O OreType serve tambem de "tipo de item" (esteiras, baus, mochila).
-     * No Marco 4 pode passar a ser um ItemType proprio. */
-    ORE_CARVAO,         /* carvao vegetal (carvoeira)           */
-    ORE_TIJOLO,         /* tijolo (forno)                       */
-    ORE_FERRO,          /* ferro (forno)                        */
     ORE_COUNT
 } OreType;
 
 typedef struct {
-    const char *name;
-    Color       color;      /* cor das pedrinhas desenhadas no chao        */
-    int         richest;    /* quantidade no centro de uma jazida (maximo) */
+    int item;           /* ItemType que sai desta jazida               */
+    int richest;        /* unidades no centro de uma jazida (maximo)   */
 } OreInfo;
 
 extern const OreInfo ORE[ORE_COUNT];

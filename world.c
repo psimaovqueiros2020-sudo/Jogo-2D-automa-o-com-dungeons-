@@ -25,20 +25,27 @@ const TerrainInfo TERRAIN[T_COUNT] = {
     [T_VAU]         = { "Vau (agua rasa)",   { 118, 174, 226, 255 }, 1 },
 };
 
-/* ATENCAO: valores baixos de proposito, para se ver uma jazida esgotar
- * com a extracao a mao. Quando houver maquinas (Marco 3), aumentar.      */
+/* QUANTO HA EM CADA TILE (o valor e o do CENTRO da mancha; nas bordas e ~25 %).
+ * Escala: 1 tile = 50 cm = 0,25 m2; 1 unidade = 0,1 L. Logo 1000 un = 100 L = uma
+ * coluna de 40 cm de material em cima de um tile. Os valores sao PROVISORIOS
+ * (afinar depois de jogar), mas pensados assim:
+ *
+ *   Argila    2000 un  (200 L: ~80 cm de lama argilosa; ha 83 tiles)
+ *   Areia     1500 un  (150 L: ~60 cm, banco de areia do ribeiro)
+ *   Hematite  1500 un  (150 L de rocha partida; ha 198 tiles)
+ *   Enxofre    800 un  (80 L: o pantano tem pouco e e dos mais raros)
+ *   Quartzo    600 un  (60 L: um afloramento pequeno, o mais raro)
+ *   Madeira    por ARVORE, ver TREE_WOOD_MIN/MAX em world.h (400 a 600 un)
+ *
+ * ("richest" tambem decide quantas pedrinhas se desenham em cada tile.) */
 const OreInfo ORE[ORE_COUNT] = {
-    [ORE_NONE]     = { "-",        {   0,   0,   0, 255 },   0 },
-    [ORE_HEMATITE] = { "Hematite", { 176,  70,  52, 255 }, 120 },
-    [ORE_ARGILA]   = { "Argila",   { 222, 140, 100, 255 }, 150 },
-    [ORE_ENXOFRE]  = { "Enxofre",  { 232, 208,  64, 255 },  80 },
-    [ORE_QUARTZO]  = { "Quartzo",  { 232, 240, 247, 255 },  60 },
-    [ORE_MADEIRA]  = { "Madeira",  { 138,  92,  48, 255 },  30 },   /* por arvore */
-    [ORE_AREIA]    = { "Areia",    { 232, 214, 150, 255 }, 100 },
-    /* produtos: richest = 0 (nunca aparecem como jazida) */
-    [ORE_CARVAO]   = { "Carvao",   {  70,  72,  84, 255 },   0 },
-    [ORE_TIJOLO]   = { "Tijolo",   { 214, 100,  50, 255 },   0 },
-    [ORE_FERRO]    = { "Ferro",    { 160, 172, 196, 255 },   0 },
+    [ORE_NONE]     = { ITEM_NONE,        0 },
+    [ORE_HEMATITE] = { ITEM_HEMATITE, 1500 },
+    [ORE_ARGILA]   = { ITEM_ARGILA,   2000 },
+    [ORE_ENXOFRE]  = { ITEM_ENXOFRE,   800 },
+    [ORE_QUARTZO]  = { ITEM_QUARTZO,   600 },
+    [ORE_MADEIRA]  = { ITEM_MADEIRA,   TREE_WOOD_MAX },    /* por arvore */
+    [ORE_AREIA]    = { ITEM_AREIA,    1500 },
 };
 
 /* ------------------------------------------------------------------ */
@@ -175,7 +182,7 @@ static Terrain generate_tile(int x, int y, uint32_t seed)
             return T_LAMA;
     }
 
-    /* 4. Pantano a leste, com poças de agua */
+    /* 4. Pantano a leste, com pocas de agua */
     float swamp_d = dist2d(fx, fy, SWAMP_X, SWAMP_Y)
                   + (fbm(fx * 0.12f, fy * 0.12f, seed + 21u) - 0.5f) * 14.0f;
     if (swamp_d < SWAMP_R) {
@@ -407,11 +414,11 @@ void generate_world(uint32_t seed)
                     .ore_amount = 0
                 };
                 /* Cada arvore (menos a parede do bordo do mapa) tem madeira
-                 * (20 a 30 unidades). Quando acaba, a arvore desaparece. */
+                 * (TREE_WOOD_MIN a TREE_WOOD_MAX unidades). Quando acaba, a arvore desaparece. */
                 int interior = x >= 3 && y >= 3 && x < MAP_W - 3 && y < MAP_H - 3;
                 if (t.terrain == T_ARVORE && interior) {
                     t.ore        = ORE_MADEIRA;
-                    t.ore_amount = (uint16_t)(20u + hash2(x, y, seed + 123u) % 11u);
+                    t.ore_amount = (uint16_t)(TREE_WOOD_MIN + hash2(x, y, seed + 123u) % (uint32_t)(TREE_WOOD_MAX - TREE_WOOD_MIN + 1));
                 }
                 *tile_at(x, y, z) = t;
             }
